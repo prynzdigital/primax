@@ -1,5 +1,6 @@
 import type {
   AdminUser,
+  Addon,
   Appointment,
   AppointmentStatus,
   BlockedDate,
@@ -30,12 +31,16 @@ function normalizeService(s: Service): Service {
   };
 }
 
+function normalizeAddon(a: Addon): Addon {
+  return { ...a, price: Number(a.price) };
+}
+
 function normalizeAppointment(a: Appointment): Appointment {
   return {
     ...a,
     total_price: a.total_price !== undefined && a.total_price !== null ? Number(a.total_price) : a.total_price,
     service: a.service ? normalizeService(a.service) : a.service,
-    addon_service: a.addon_service ? normalizeService(a.addon_service) : a.addon_service,
+    addons: a.addons ? a.addons.map(normalizeAddon) : a.addons,
   };
 }
 
@@ -85,6 +90,20 @@ export async function updateService(id: string, payload: Partial<Service>) {
   return { ...res, data: res.data ? normalizeService(res.data) : res.data };
 }
 
+// Add-ons
+export async function listAddons() {
+  const res = await request<Addon[]>('/addons');
+  return { ...res, data: res.data ? res.data.map(normalizeAddon) : res.data };
+}
+export async function createAddon(payload: Partial<Addon>) {
+  const res = await request<Addon>('/addons', { method: 'POST', body: JSON.stringify(payload) });
+  return { ...res, data: res.data ? normalizeAddon(res.data) : res.data };
+}
+export async function updateAddon(id: string, payload: Partial<Addon>) {
+  const res = await request<Addon>(`/addons?id=${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  return { ...res, data: res.data ? normalizeAddon(res.data) : res.data };
+}
+
 // Appointments
 export async function listAppointments() {
   const res = await request<Appointment[]>('/appointments');
@@ -94,7 +113,7 @@ export async function listAppointmentsForDate(date: string) {
   return request<Appointment[]>(`/appointments?date=${date}`);
 }
 export async function createAppointment(
-  payload: Omit<Appointment, 'id' | 'created_at' | 'status' | 'service' | 'addon_service'>
+  payload: Omit<Appointment, 'id' | 'created_at' | 'status' | 'service' | 'addons'> & { addon_ids: string[] }
 ) {
   // Status is always set server-side; the client cannot request a status.
   return request<{ id: string }>('/appointments', { method: 'POST', body: JSON.stringify(payload) });

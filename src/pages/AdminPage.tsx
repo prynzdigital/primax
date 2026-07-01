@@ -5,6 +5,7 @@ import { Sidebar, MobileBottomBar } from '../components/admin/Sidebar';
 import { Overview } from '../components/admin/Overview';
 import { AppointmentsAdmin } from '../components/admin/AppointmentsAdmin';
 import { ServicesAdmin } from '../components/admin/ServicesAdmin';
+import { AddonsAdmin } from '../components/admin/AddonsAdmin';
 import { BusinessHoursAdmin } from '../components/admin/BusinessHoursAdmin';
 import { BlockedDatesAdmin } from '../components/admin/BlockedDatesAdmin';
 import { BusinessSettingsAdmin } from '../components/admin/BusinessSettingsAdmin';
@@ -36,6 +37,7 @@ export default function AdminPage() {
             <Route index element={<Overview />} />
             <Route path="appointments" element={<AppointmentsAdmin />} />
             <Route path="services" element={<ServicesAdmin />} />
+            <Route path="addons" element={<AddonsAdmin />} />
             <Route path="hours" element={<BusinessHoursAdmin />} />
             <Route path="blocked-dates" element={<BlockedDatesAdmin />} />
             <Route path="settings" element={<BusinessSettingsAdmin />} />

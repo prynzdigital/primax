@@ -12,11 +12,11 @@ import {
   Minus,
   Phone,
   Plus,
-  Sparkles,
   User,
   type LucideIcon,
 } from 'lucide-react';
 import type {
+  Addon,
   Appointment,
   BlockedDate,
   BusinessHours,
@@ -41,6 +41,7 @@ import { getServiceImage } from '../../lib/images';
 
 interface BookingProps {
   services: Service[];
+  addons: Addon[];
   selectedService: Service | null;
   setSelectedService: (s: Service | null) => void;
   businessHours: BusinessHours[];
@@ -59,7 +60,7 @@ export interface SuccessData {
   notes: string;
   bedrooms: number;
   bathrooms: number;
-  addon: Service | null;
+  addons: Addon[];
   totalPrice: number;
 }
 
@@ -67,6 +68,7 @@ type Step = 1 | 2 | 3;
 
 export function Booking({
   services,
+  addons,
   selectedService,
   setSelectedService,
   businessHours,
@@ -91,30 +93,29 @@ export function Booking({
 
   const [bedrooms, setBedrooms] = useState(1);
   const [bathrooms, setBathrooms] = useState(1);
-  const [addonSelected, setAddonSelected] = useState(false);
+  const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);
 
-  const activeServices = useMemo(
-    () => services.filter((s) => s.is_active && !s.is_addon),
-    [services]
-  );
-  const addonService = useMemo(
-    () => services.find((s) => s.is_addon && s.is_active) ?? null,
-    [services]
+  const activeServices = useMemo(() => services.filter((s) => s.is_active), [services]);
+  const activeAddons = useMemo(() => addons.filter((a) => a.is_active), [addons]);
+  const selectedAddons = useMemo(
+    () => activeAddons.filter((a) => selectedAddonIds.includes(a.id)),
+    [activeAddons, selectedAddonIds]
   );
   const scalesWithRooms =
     selectedService?.category === 'standard' || selectedService?.category === 'turnover';
-  const showAddonOption = selectedService?.category === 'standard' && !!addonService;
-  const selectedAddon = showAddonOption && addonSelected ? addonService : null;
   const totalPrice = selectedService
-    ? computeTotalPrice({ service: selectedService, bedrooms, bathrooms, addon: selectedAddon })
+    ? computeTotalPrice({ service: selectedService, bedrooms, bathrooms, addons: selectedAddons })
     : 0;
+  const totalDuration =
+    (selectedService?.duration_minutes ?? 0) +
+    selectedAddons.reduce((sum, a) => sum + a.duration_minutes, 0);
 
   useEffect(() => {
     if (selectedService) {
       setStep((prev) => (prev < 2 ? 2 : prev));
       setBedrooms(selectedService.base_bedrooms);
       setBathrooms(selectedService.base_bathrooms);
-      if (selectedService.category !== 'standard') setAddonSelected(false);
+      setSelectedAddonIds([]);
     }
   }, [selectedService]);
 
@@ -170,6 +171,12 @@ export function Booking({
     else if (step === 2) setStep(1);
   }
 
+  function toggleAddon(id: string) {
+    setSelectedAddonIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
   async function submit() {
     if (!selectedService || !selectedDate || !selectedSlot) return;
     setError(null);
@@ -190,7 +197,7 @@ export function Booking({
       notes: form.notes.trim() || null,
       bedrooms,
       bathrooms,
-      addon_service_id: selectedAddon?.id ?? null,
+      addon_ids: selectedAddonIds,
       total_price: totalPrice,
     };
 
@@ -212,7 +219,7 @@ export function Booking({
       notes: form.notes.trim(),
       bedrooms,
       bathrooms,
-      addon: selectedAddon,
+      addons: selectedAddons,
       totalPrice,
     });
   }
@@ -246,10 +253,9 @@ export function Booking({
                     setBedrooms={setBedrooms}
                     bathrooms={bathrooms}
                     setBathrooms={setBathrooms}
-                    showAddonOption={showAddonOption}
-                    addonService={addonService}
-                    addonSelected={addonSelected}
-                    setAddonSelected={setAddonSelected}
+                    addons={activeAddons}
+                    selectedAddonIds={selectedAddonIds}
+                    onToggleAddon={toggleAddon}
                   />
                 )}
                 {step === 2 && (
@@ -310,8 +316,9 @@ export function Booking({
               bedrooms={bedrooms}
               bathrooms={bathrooms}
               scalesWithRooms={scalesWithRooms}
-              addon={selectedAddon}
+              addons={selectedAddons}
               totalPrice={totalPrice}
+              totalDuration={totalDuration}
             />
           </div>
         </div>
@@ -370,10 +377,9 @@ function Step1({
   setBedrooms,
   bathrooms,
   setBathrooms,
-  showAddonOption,
-  addonService,
-  addonSelected,
-  setAddonSelected,
+  addons,
+  selectedAddonIds,
+  onToggleAddon,
 }: {
   services: Service[];
   selected: Service | null;
@@ -383,10 +389,9 @@ function Step1({
   setBedrooms: (n: number) => void;
   bathrooms: number;
   setBathrooms: (n: number) => void;
-  showAddonOption: boolean;
-  addonService: Service | null;
-  addonSelected: boolean;
-  setAddonSelected: (v: boolean) => void;
+  addons: Addon[];
+  selectedAddonIds: string[];
+  onToggleAddon: (id: string) => void;
 }) {
   return (
     <div>
@@ -469,34 +474,43 @@ function Step1({
         </div>
       )}
 
-      {selected && showAddonOption && addonService && (
-        <label
-          className={cn(
-            'mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition',
-            addonSelected ? 'border-brand-500 bg-brand-50/50' : 'border-ink-200 bg-white hover:border-ink-300'
-          )}
-        >
-          <input
-            type="checkbox"
-            checked={addonSelected}
-            onChange={(e) => setAddonSelected(e.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <Sparkles size={14} className="text-brand-600" />
-              <span className="text-sm font-semibold text-ink-900">
-                Add {addonService.name.replace(' (Add-On to Standard)', '')}
-              </span>
-              <span className="ml-auto text-sm font-semibold text-ink-900">
-                +{formatCurrency(addonService.price)}
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-ink-500">
-              {addonService.description ?? 'A deeper, top-to-bottom clean on top of the standard visit.'}
-            </p>
+      {selected && addons.length > 0 && (
+        <div className="mt-6 rounded-2xl border border-ink-100 bg-ink-50/50 p-5">
+          <div className="text-sm font-medium text-ink-900">Add extra services</div>
+          <p className="mt-1 text-xs text-ink-500">
+            Optional — pick as many as you'd like. Each is priced and timed separately.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {addons.map((a) => {
+              const checked = selectedAddonIds.includes(a.id);
+              return (
+                <label
+                  key={a.id}
+                  className={cn(
+                    'flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition',
+                    checked ? 'border-brand-500 bg-brand-50/50' : 'border-ink-200 bg-white hover:border-ink-300'
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onToggleAddon(a.id)}
+                    className="mt-1 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-ink-900">{a.name}</span>
+                      <span className="text-sm font-semibold text-ink-900">{formatCurrency(a.price)}</span>
+                    </div>
+                    {a.description && (
+                      <p className="mt-0.5 text-xs text-ink-500 line-clamp-2">{a.description}</p>
+                    )}
+                  </div>
+                </label>
+              );
+            })}
           </div>
-        </label>
+        </div>
       )}
     </div>
   );
@@ -796,8 +810,9 @@ function Summary({
   bedrooms,
   bathrooms,
   scalesWithRooms,
-  addon,
+  addons,
   totalPrice,
+  totalDuration,
 }: {
   service: Service | null;
   date: Date | null;
@@ -807,8 +822,9 @@ function Summary({
   bedrooms: number;
   bathrooms: number;
   scalesWithRooms: boolean;
-  addon: Service | null;
+  addons: Addon[];
   totalPrice: number;
+  totalDuration: number;
 }) {
   return (
     <aside className="card sticky top-24 h-fit overflow-hidden">
@@ -829,7 +845,9 @@ function Summary({
         {service && scalesWithRooms && (
           <Row label="Home size">{bedrooms} bed · {bathrooms} bath</Row>
         )}
-        {addon && <Row label="Add-on">{addon.name.replace(' (Add-On to Standard)', '')}</Row>}
+        {addons.length > 0 && (
+          <Row label="Add-ons">{addons.map((a) => a.name).join(', ')}</Row>
+        )}
         <Row label="Date">
           {date ? format(date, 'EEE, MMM d, yyyy') : <Placeholder>Select a date</Placeholder>}
         </Row>
@@ -837,7 +855,7 @@ function Summary({
           {slot ? slot.label : <Placeholder>Select a time</Placeholder>}
         </Row>
         <Row label="Duration">
-          {service ? formatDuration(service.duration_minutes + (addon?.duration_minutes ?? 0)) : <Placeholder>—</Placeholder>}
+          {service ? formatDuration(totalDuration) : <Placeholder>—</Placeholder>}
         </Row>
         {step === 3 && (
           <>

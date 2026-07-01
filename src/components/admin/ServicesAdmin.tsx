@@ -10,7 +10,7 @@ import { cn } from '../../lib/cn';
 const CATEGORIES: { value: ServiceCategory; label: string }[] = [
   { value: 'sectional', label: 'Sectional (micro-booking)' },
   { value: 'standard', label: 'Standard Maintenance' },
-  { value: 'deep_addon', label: 'Deep Clean Add-On' },
+  { value: 'deep', label: 'Deep Cleaning' },
   { value: 'turnover', label: 'Move-In / Move-Out Turnover' },
 ];
 
@@ -27,7 +27,6 @@ interface FormState {
   base_bathrooms: number;
   bedroom_modifier: number;
   bathroom_modifier: number;
-  is_addon: boolean;
 }
 
 const EMPTY: FormState = {
@@ -42,7 +41,6 @@ const EMPTY: FormState = {
   base_bathrooms: 1,
   bedroom_modifier: 0,
   bathroom_modifier: 0,
-  is_addon: false,
 };
 
 export function ServicesAdmin() {
@@ -84,7 +82,6 @@ export function ServicesAdmin() {
       base_bathrooms: s.base_bathrooms,
       bedroom_modifier: s.bedroom_modifier,
       bathroom_modifier: s.bathroom_modifier,
-      is_addon: s.is_addon,
     });
     setError(null);
     setOpenForm(true);
@@ -112,7 +109,6 @@ export function ServicesAdmin() {
       base_bathrooms: Number(form.base_bathrooms),
       bedroom_modifier: Number(form.bedroom_modifier),
       bathroom_modifier: Number(form.bathroom_modifier),
-      is_addon: form.is_addon,
     };
     const res = form.id ? await updateService(form.id, payload) : await createService(payload);
     setSaving(false);
@@ -175,6 +171,9 @@ export function ServicesAdmin() {
                     <h3 className="display-heading text-lg">{s.name}</h3>
                     {!s.is_active && (
                       <span className="badge bg-ink-100 text-ink-600 ring-ink-200">Inactive</span>
+                    )}
+                    {s.price === 0 && (
+                      <span className="badge bg-amber-50 text-amber-700 ring-amber-200">Needs pricing</span>
                     )}
                   </div>
                   <div className="mt-1 text-xs text-ink-500">
@@ -339,19 +338,6 @@ export function ServicesAdmin() {
               value={form.bathroom_modifier}
               onChange={(e) => setForm({ ...form, bathroom_modifier: parseFloat(e.target.value || '0') })}
             />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="flex items-center gap-3 rounded-xl border border-ink-100 bg-ink-50/50 p-3">
-              <input
-                type="checkbox"
-                checked={form.is_addon}
-                onChange={(e) => setForm({ ...form, is_addon: e.target.checked })}
-                className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
-              />
-              <span className="text-sm text-ink-800">
-                Add-on only — hidden from the main service list, offered as an upgrade during Standard Maintenance booking
-              </span>
-            </label>
           </div>
           <div className="sm:col-span-2">
             <label className="flex items-center gap-3 rounded-xl border border-ink-100 bg-ink-50/50 p-3">

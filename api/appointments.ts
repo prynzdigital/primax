@@ -16,13 +16,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(rows);
     }
 
-    // Admin: full list with the related service and addon joined in.
+    // Admin: full list with the related service and selected add-ons joined in.
     if (!requireAdmin(req, res)) return;
     const rows = await sql`
-      SELECT a.*, row_to_json(s.*) AS service, row_to_json(ad.*) AS addon_service
+      SELECT a.*, row_to_json(s.*) AS service,
+        COALESCE(
+          (
+            SELECT json_agg(ad.* ORDER BY ad.name)
+            FROM appointment_addons aa
+            JOIN addons ad ON ad.id = aa.addon_id
+            WHERE aa.appointment_id = a.id
+          ),
+          '[]'
+        ) AS addons
       FROM appointments a
       LEFT JOIN services s ON s.id = a.service_id
-      LEFT JOIN services ad ON ad.id = a.addon_service_id
       ORDER BY a.appointment_date DESC, a.start_time DESC
     `;
     return res.status(200).json(rows);
@@ -40,7 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       notes,
       bedrooms,
       bathrooms,
-      addon_service_id,
+      addon_ids,
       total_price,
     } = req.body ?? {};
     if (
@@ -52,15 +60,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const rows = await sql`
       INSERT INTO appointments (
         full_name, email, phone, service_id, appointment_date, start_time, end_time, status, notes,
-        bedrooms, bathrooms, addon_service_id, total_price
+        bedrooms, bathrooms, total_price
       )
       VALUES (
         ${full_name}, ${email}, ${phone}, ${service_id}, ${appointment_date}, ${start_time}, ${end_time}, 'pending', ${notes ?? null},
-        ${bedrooms ?? 1}, ${bathrooms ?? 1}, ${addon_service_id ?? null}, ${total_price}
+        ${bedrooms ?? 1}, ${bathrooms ?? 1}, ${total_price}
       )
       RETURNING id
     `;
-    return res.status(201).json(rows[0]);
+    const appointmentId = rows[0].id as string;
+
+    for (const addonId of (addon_ids as string[] | undefined) ?? []) {
+      await sql`
+        INSERT INTO appointment_addons (appointment_id, addon_id)
+        VALUES (${appointmentId}, ${addonId})
+      `;
+    }
+
+    return res.status(201).json({ id: appointmentId });
   }
 
   if (req.method === 'PATCH') {

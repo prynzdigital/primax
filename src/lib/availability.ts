@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import type {
+  Addon,
   Appointment,
   BlockedDate,
   BusinessHours,
@@ -159,16 +160,17 @@ export function computeTotalPrice(params: {
   service: Service;
   bedrooms: number;
   bathrooms: number;
-  addon: Service | null;
+  addons: Addon[];
 }): number {
-  const { service, bedrooms, bathrooms, addon } = params;
+  const { service, bedrooms, bathrooms, addons } = params;
   const extraBedrooms = Math.max(0, bedrooms - service.base_bedrooms);
   const extraBathrooms = Math.max(0, bathrooms - service.base_bathrooms);
+  const addonsTotal = addons.reduce((sum, a) => sum + a.price, 0);
   return (
     service.price +
     extraBedrooms * service.bedroom_modifier +
     extraBathrooms * service.bathroom_modifier +
-    (addon ? addon.price : 0)
+    addonsTotal
   );
 }
 

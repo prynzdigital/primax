@@ -48,7 +48,7 @@ export function SuccessConfirmation({ data, settings, onBookAnother }: Props) {
                 <Detail
                   icon={Clock}
                   label="Time"
-                  value={`${data.slot.label} · ${formatDuration(data.service.duration_minutes + (data.addon?.duration_minutes ?? 0))}`}
+                  value={`${data.slot.label} · ${formatDuration(data.service.duration_minutes + data.addons.reduce((sum, a) => sum + a.duration_minutes, 0))}`}
                 />
                 <Detail icon={Mail} label="Email" value={data.email} />
                 <Detail icon={Phone} label="Phone" value={data.phone} />
@@ -59,7 +59,7 @@ export function SuccessConfirmation({ data, settings, onBookAnother }: Props) {
                     (data.service.category === 'standard' || data.service.category === 'turnover'
                       ? `${data.service.name} (${data.bedrooms} bed · ${data.bathrooms} bath)`
                       : data.service.name) +
-                    (data.addon ? ` + ${data.addon.name.replace(' (Add-On to Standard)', '')}` : '') +
+                    (data.addons.length > 0 ? ` + ${data.addons.map((a) => a.name).join(', ')}` : '') +
                     ` · ${formatCurrency(data.totalPrice)}`
                   }
                   className="sm:col-span-2"

@@ -10,7 +10,7 @@ interface ServicesProps {
 }
 
 export function Services({ services, loading, onSelectService }: ServicesProps) {
-  const activeServices = services.filter((s) => s.is_active && !s.is_addon);
+  const activeServices = services.filter((s) => s.is_active);
 
   return (
     <section id="services" className="relative py-24 lg:py-32">

@@ -164,7 +164,10 @@ export function AppointmentsAdmin() {
               <DetailItem label="Service" value={active.service?.name ?? '—'} />
               <DetailItem label="Total" value={formatCurrency(active.total_price ?? active.service?.price ?? 0)} />
               <DetailItem label="Home size" value={`${active.bedrooms} bed · ${active.bathrooms} bath`} />
-              <DetailItem label="Add-on" value={active.addon_service?.name ?? 'None'} />
+              <DetailItem
+                label="Add-ons"
+                value={active.addons && active.addons.length > 0 ? active.addons.map((a) => a.name).join(', ') : 'None'}
+              />
               <DetailItem label="Created" value={format(parseISO(active.created_at), 'MMM d, yyyy')} />
             </div>
 
