@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { sql, updateRow } from './_db.js';
 import { requireAdmin } from './_auth.js';
+import { sendSms } from './_sms.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
@@ -41,6 +42,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       full_name,
       email,
       phone,
+      address,
+      city,
+      zip_code,
       service_id,
       appointment_date,
       start_time,
@@ -52,18 +56,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       total_price,
     } = req.body ?? {};
     if (
-      !full_name || !email || !phone || !service_id || !appointment_date || !start_time || !end_time ||
+      !full_name || !email || !phone || !address || !city || !zip_code ||
+      !service_id || !appointment_date || !start_time || !end_time ||
       total_price === undefined || total_price === null
     ) {
       return res.status(400).json({ error: 'Missing required booking fields.' });
     }
     const rows = await sql`
       INSERT INTO appointments (
-        full_name, email, phone, service_id, appointment_date, start_time, end_time, status, notes,
+        full_name, email, phone, address, city, zip_code, service_id, appointment_date, start_time, end_time, status, notes,
         bedrooms, bathrooms, total_price
       )
       VALUES (
-        ${full_name}, ${email}, ${phone}, ${service_id}, ${appointment_date}, ${start_time}, ${end_time}, 'pending', ${notes ?? null},
+        ${full_name}, ${email}, ${phone}, ${address}, ${city}, ${zip_code}, ${service_id}, ${appointment_date}, ${start_time}, ${end_time}, 'pending', ${notes ?? null},
         ${bedrooms ?? 1}, ${bathrooms ?? 1}, ${total_price}
       )
       RETURNING id
@@ -77,6 +82,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `;
     }
 
+    // Notify customer + admin — never blocks or fails the booking itself.
+    const [service] = await sql`SELECT name FROM services WHERE id = ${service_id}`;
+    const [settings] = await sql`SELECT business_name, business_phone FROM business_settings LIMIT 1`;
+    const serviceName = service?.name ?? 'your cleaning';
+    const businessName = settings?.business_name ?? 'Primax Group';
+    await sendSms(
+      phone,
+      `Hi ${full_name}, your ${serviceName} with ${businessName} is booked for ${appointment_date} at ${start_time.slice(0, 5)}. See you then!`
+    );
+    if (settings?.business_phone) {
+      await sendSms(
+        settings.business_phone,
+        `New booking: ${full_name} — ${serviceName} on ${appointment_date} at ${start_time.slice(0, 5)}. $${total_price}.`
+      );
+    }
+
     return res.status(201).json({ id: appointmentId });
   }
 
@@ -84,8 +105,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!requireAdmin(req, res)) return;
     const id = req.query.id as string | undefined;
     if (!id) return res.status(400).json({ error: 'Missing id.' });
-    const updated = await updateRow('appointments', id, req.body ?? {});
+    const body = req.body ?? {};
+    const updated = await updateRow('appointments', id, body);
     if (!updated) return res.status(404).json({ error: 'Appointment not found.' });
+
+    if (body.status) {
+      await sendSms(
+        updated.phone,
+        `Hi ${updated.full_name}, your Primax Group appointment on ${updated.appointment_date} is now ${updated.status}.`
+      );
+    }
+
     return res.status(200).json(updated);
   }
 

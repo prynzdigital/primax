@@ -168,6 +168,11 @@ export function AppointmentsAdmin() {
                 label="Add-ons"
                 value={active.addons && active.addons.length > 0 ? active.addons.map((a) => a.name).join(', ') : 'None'}
               />
+              <DetailItem
+                label="Location"
+                value={`${active.address}, ${active.city} ${active.zip_code}`}
+                className="sm:col-span-2"
+              />
               <DetailItem label="Created" value={format(parseISO(active.created_at), 'MMM d, yyyy')} />
             </div>
 
@@ -239,9 +244,9 @@ function FilterPill({
   );
 }
 
-function DetailItem({ label, value }: { label: string; value: string }) {
+function DetailItem({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
-    <div>
+    <div className={className}>
       <div className="text-[11px] uppercase tracking-widest text-ink-500">{label}</div>
       <div className="mt-1 text-sm font-medium text-ink-900">{value}</div>
     </div>

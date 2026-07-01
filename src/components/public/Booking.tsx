@@ -3,12 +3,15 @@ import { format } from 'date-fns';
 import {
   ArrowLeft,
   ArrowRight,
+  Building2,
   CalendarDays,
   Check,
   ChevronLeft,
   ChevronRight,
   Clock,
+  Hash,
   Mail,
+  MapPin,
   Minus,
   Phone,
   Plus,
@@ -57,11 +60,24 @@ export interface SuccessData {
   full_name: string;
   email: string;
   phone: string;
+  address: string;
+  city: string;
+  zip_code: string;
   notes: string;
   bedrooms: number;
   bathrooms: number;
   addons: Addon[];
   totalPrice: number;
+}
+
+export interface ContactFormState {
+  full_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  zip_code: string;
+  notes: string;
 }
 
 type Step = 1 | 2 | 3;
@@ -87,7 +103,15 @@ export function Booking({
   const [appointmentsForDate, setAppointmentsForDate] = useState<Appointment[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  const [form, setForm] = useState({ full_name: '', email: '', phone: '', notes: '' });
+  const [form, setForm] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    zip_code: '',
+    notes: '',
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -180,8 +204,11 @@ export function Booking({
   async function submit() {
     if (!selectedService || !selectedDate || !selectedSlot) return;
     setError(null);
-    if (!form.full_name.trim() || !form.email.trim() || !form.phone.trim()) {
-      setError('Please fill in your name, email, and phone.');
+    if (
+      !form.full_name.trim() || !form.email.trim() || !form.phone.trim() ||
+      !form.address.trim() || !form.city.trim() || !form.zip_code.trim()
+    ) {
+      setError('Please fill in your name, email, phone, and service address.');
       return;
     }
 
@@ -190,6 +217,9 @@ export function Booking({
       full_name: form.full_name.trim(),
       email: form.email.trim(),
       phone: form.phone.trim(),
+      address: form.address.trim(),
+      city: form.city.trim(),
+      zip_code: form.zip_code.trim(),
       service_id: selectedService.id,
       appointment_date: toDbDate(selectedDate),
       start_time: toDbTime(selectedSlot.start),
@@ -216,6 +246,9 @@ export function Booking({
       full_name: payload.full_name,
       email: payload.email,
       phone: payload.phone,
+      address: payload.address,
+      city: payload.city,
+      zip_code: payload.zip_code,
       notes: form.notes.trim(),
       bedrooms,
       bathrooms,
@@ -712,8 +745,8 @@ function Step3({
   setForm,
   error,
 }: {
-  form: { full_name: string; email: string; phone: string; notes: string };
-  setForm: (f: { full_name: string; email: string; phone: string; notes: string }) => void;
+  form: ContactFormState;
+  setForm: (f: ContactFormState) => void;
   error: string | null;
 }) {
   return (
@@ -748,6 +781,29 @@ function Step3({
             placeholder="you@example.com"
           />
         </div>
+        <div className="sm:col-span-2">
+          <Field
+            icon={MapPin}
+            label="Service address"
+            value={form.address}
+            onChange={(v) => setForm({ ...form, address: v })}
+            placeholder="123 W Adams St, Apt 4B"
+          />
+        </div>
+        <Field
+          icon={Building2}
+          label="City"
+          value={form.city}
+          onChange={(v) => setForm({ ...form, city: v })}
+          placeholder="Chicago"
+        />
+        <Field
+          icon={Hash}
+          label="Zip code"
+          value={form.zip_code}
+          onChange={(v) => setForm({ ...form, zip_code: v })}
+          placeholder="60604"
+        />
         <div className="sm:col-span-2">
           <label className="label">Notes for your cleaning team (optional)</label>
           <textarea
@@ -817,7 +873,7 @@ function Summary({
   service: Service | null;
   date: Date | null;
   slot: TimeSlot | null;
-  form: { full_name: string; email: string; phone: string; notes: string };
+  form: ContactFormState;
   step: Step;
   bedrooms: number;
   bathrooms: number;

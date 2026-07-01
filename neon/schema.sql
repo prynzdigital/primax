@@ -90,7 +90,7 @@ WHERE NOT EXISTS (SELECT 1 FROM business_settings);
 
 ALTER TABLE services ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
 ALTER TABLE services ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'standard'
-  CHECK (category IN ('sectional', 'standard', 'deep_addon', 'turnover'));
+  CHECK (category IN ('sectional', 'standard', 'deep', 'turnover'));
 ALTER TABLE services ADD COLUMN IF NOT EXISTS tasks TEXT[] NOT NULL DEFAULT '{}';
 ALTER TABLE services ADD COLUMN IF NOT EXISTS base_bedrooms INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE services ADD COLUMN IF NOT EXISTS base_bathrooms INTEGER NOT NULL DEFAULT 1;
@@ -179,27 +179,6 @@ VALUES
       'Bedrooms & Living — empty all trash bins'
     ]::text[],
     1, 1, 30.00, 40.00, false
-  ),
-  (
-    'deep-premium-addon',
-    'Deep Premium Upgrade (Add-On to Standard)',
-    'An add-on upgrade bundled onto Standard Maintenance Cleaning for a full top-to-bottom deep clean. Not bookable on its own.',
-    90, 99.00, true, 'deep_addon',
-    ARRAY[
-      'Kitchen — Oven Interior carbon removal',
-      'Kitchen — Fridge/Freezer Interior sanitize shelves/drawers',
-      'Kitchen — Range Hood Exhaust degrease',
-      'Kitchen — Cabinet Detailing hand-wipe exterior faces',
-      'Bathroom — Grout Remediation line scrub',
-      'Bathroom — Exhaust Ventilation fan vacuum/wipe',
-      'Bathroom — Scale Removal on showerheads/taps',
-      'Living Space — Baseboard Scrubbing hand-wipe',
-      'Living Space — Window Interiors glass/sills/tracks',
-      'Living Space — Blind Detailing dust individual slats',
-      'Living Space — Under-Furniture vacuuming',
-      'Living Space — Ventilation register/vent dusting'
-    ]::text[],
-    1, 1, 0, 0, true
   ),
   (
     'turnover-empty-unit',
@@ -515,3 +494,9 @@ VALUES
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   description = EXCLUDED.description;
+
+-- Migration: service address for the booking form (needed so cleaners know
+-- where to go). Idempotent — safe to re-run.
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS address TEXT NOT NULL DEFAULT '';
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS city TEXT NOT NULL DEFAULT '';
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS zip_code TEXT NOT NULL DEFAULT '';

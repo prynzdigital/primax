@@ -54,6 +54,12 @@ export function SuccessConfirmation({ data, settings, onBookAnother }: Props) {
                 <Detail icon={Phone} label="Phone" value={data.phone} />
                 <Detail
                   icon={MapPin}
+                  label="Address"
+                  value={`${data.address}, ${data.city} ${data.zip_code}`}
+                  className="sm:col-span-2"
+                />
+                <Detail
+                  icon={MapPin}
                   label="Service"
                   value={
                     (data.service.category === 'standard' || data.service.category === 'turnover'

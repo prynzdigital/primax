@@ -39,6 +39,9 @@ export interface Appointment {
   full_name: string;
   email: string;
   phone: string;
+  address: string;
+  city: string;
+  zip_code: string;
   service_id: string;
   appointment_date: string;
   start_time: string;
