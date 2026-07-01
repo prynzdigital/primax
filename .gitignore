@@ -10,3 +10,6 @@ dist-ssr
 .idea
 
 .vercel
+
+# Raw brand asset sources — working copies live in public/
+assets/

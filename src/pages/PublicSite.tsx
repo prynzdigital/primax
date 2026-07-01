@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Navbar } from '../components/public/Navbar';
 import { Hero } from '../components/public/Hero';
 import { Services } from '../components/public/Services';
@@ -6,73 +6,16 @@ import { About } from '../components/public/About';
 import { Booking, type SuccessData } from '../components/public/Booking';
 import { Footer } from '../components/public/Footer';
 import { SuccessConfirmation } from '../components/public/SuccessConfirmation';
-import { listServices, listAddons, listBusinessHours, listBlockedDates, getBusinessSettings } from '../lib/api';
-import {
-  demoAddons,
-  demoBlockedDates,
-  demoBusinessHours,
-  demoServices,
-  demoSettings,
-} from '../lib/demoData';
-import type {
-  Addon,
-  BlockedDate,
-  BusinessHours,
-  BusinessSettings,
-  Service,
-} from '../lib/types';
+import { usePublicData } from '../lib/usePublicData';
+import type { Service } from '../lib/types';
 
 export default function PublicSite() {
-  const [services, setServices] = useState<Service[]>([]);
-  const [addons, setAddons] = useState<Addon[]>([]);
-  const [businessHours, setBusinessHours] = useState<BusinessHours[]>([]);
-  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
-  const [settings, setSettings] = useState<BusinessSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { services, addons, businessHours, blockedDates, settings, loading } = usePublicData();
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [success, setSuccess] = useState<SuccessData | null>(null);
 
   const bookingRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      const [svc, ads, hrs, blk, set] = await Promise.all([
-        listServices(),
-        listAddons(),
-        listBusinessHours(),
-        listBlockedDates(),
-        getBusinessSettings(),
-      ]);
-      if (cancelled) return;
-
-      // Backend not reachable/configured yet — fall back to demo data so the
-      // site never renders blank during setup.
-      if (svc.error && ads.error && hrs.error && blk.error && set.error) {
-        setServices(demoServices);
-        setAddons(demoAddons);
-        setBusinessHours(demoBusinessHours);
-        setBlockedDates(demoBlockedDates);
-        setSettings(demoSettings);
-        setLoading(false);
-        return;
-      }
-
-      setServices(svc.data ?? []);
-      setAddons(ads.data ?? []);
-      setBusinessHours(hrs.data ?? []);
-      setBlockedDates(blk.data ?? []);
-      setSettings(set.data ?? null);
-      setLoading(false);
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const scrollToBooking = () => {
     const el = document.getElementById('booking');
