@@ -13,10 +13,20 @@ export function toE164(phone: string): string | null {
 
 export async function sendSms(to: string, body: string): Promise<void> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
   const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+  // Twilio supports two Basic Auth credential pairs — an API Key (username
+  // is the SK... key SID, not the Account SID) is preferred when present,
+  // falling back to the main Account SID + Auth Token pair. Either way, the
+  // Account SID (AC...) always goes in the URL path, never in the auth header
+  // when using an API Key.
+  const apiKeySid = process.env.TWILIO_API_KEY_SID;
+  const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
 
-  if (!accountSid || !authToken || !fromNumber) {
+  const authUser = apiKeySid && apiKeySecret ? apiKeySid : accountSid;
+  const authPass = apiKeySid && apiKeySecret ? apiKeySecret : authToken;
+
+  if (!accountSid || !fromNumber || !authUser || !authPass) {
     console.warn('[sms] Twilio is not configured — skipping SMS send.');
     return;
   }
@@ -33,7 +43,7 @@ export async function sendSms(to: string, body: string): Promise<void> {
       {
         method: 'POST',
         headers: {
-          Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+          Authorization: `Basic ${Buffer.from(`${authUser}:${authPass}`).toString('base64')}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({ To: toNumber, From: fromNumber, Body: body }).toString(),
