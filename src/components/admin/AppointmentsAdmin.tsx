@@ -11,6 +11,24 @@ import { formatCurrency } from '../../lib/availability';
 
 const STATUSES: AppointmentStatus[] = ['pending', 'confirmed', 'completed', 'cancelled'];
 
+const FREQUENCY_LABELS: Record<string, string> = {
+  one_time: 'One-Time',
+  monthly: 'Monthly',
+  biweekly: 'Bi-Weekly',
+  weekly: 'Weekly',
+};
+
+function roomSummary(a: Appointment): string {
+  const parts: string[] = [];
+  if (a.bedrooms) parts.push(`${a.bedrooms} bed`);
+  if (a.bathrooms) parts.push(`${a.bathrooms} bath`);
+  if (a.living_rooms) parts.push(`${a.living_rooms} living`);
+  if (a.kitchens) parts.push(`${a.kitchens} kitchen`);
+  if (a.balconies) parts.push(`${a.balconies} balcony`);
+  if (a.square_footage) parts.push(`${a.square_footage} sq ft`);
+  return parts.length > 0 ? parts.join(' · ') : '—';
+}
+
 export function AppointmentsAdmin() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -163,10 +181,15 @@ export function AppointmentsAdmin() {
               <DetailItem label="Time" value={`${active.start_time.slice(0, 5)} – ${active.end_time.slice(0, 5)}`} />
               <DetailItem label="Service" value={active.service?.name ?? '—'} />
               <DetailItem label="Total" value={formatCurrency(active.total_price ?? active.service?.price ?? 0)} />
-              <DetailItem label="Home size" value={`${active.bedrooms} bed · ${active.bathrooms} bath`} />
+              <DetailItem label="Home size" value={roomSummary(active)} />
+              <DetailItem label="Frequency" value={FREQUENCY_LABELS[active.frequency] ?? active.frequency} />
               <DetailItem
                 label="Add-ons"
-                value={active.addons && active.addons.length > 0 ? active.addons.map((a) => a.name).join(', ') : 'None'}
+                value={
+                  active.addons && active.addons.length > 0
+                    ? active.addons.map((a) => (a.quantity > 1 ? `${a.name} ×${a.quantity}` : a.name)).join(', ')
+                    : 'None'
+                }
               />
               <DetailItem
                 label="Location"

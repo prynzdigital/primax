@@ -20,19 +20,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tasks,
       base_bedrooms,
       base_bathrooms,
+      base_living_rooms,
+      base_kitchens,
+      base_balconies,
       bedroom_modifier,
       bathroom_modifier,
+      living_room_modifier,
+      kitchen_modifier,
+      balcony_modifier,
     } = req.body ?? {};
     if (!name) return res.status(400).json({ error: 'Service name is required.' });
     const rows = await sql`
       INSERT INTO services (
         name, description, duration_minutes, price, is_active,
-        category, tasks, base_bedrooms, base_bathrooms, bedroom_modifier, bathroom_modifier
+        category, tasks, base_bedrooms, base_bathrooms, base_living_rooms, base_kitchens, base_balconies,
+        bedroom_modifier, bathroom_modifier, living_room_modifier, kitchen_modifier, balcony_modifier
       )
       VALUES (
         ${name}, ${description ?? null}, ${duration_minutes}, ${price}, ${is_active ?? true},
         ${category ?? 'standard'}, ${tasks ?? []}, ${base_bedrooms ?? 1}, ${base_bathrooms ?? 1},
-        ${bedroom_modifier ?? 0}, ${bathroom_modifier ?? 0}
+        ${base_living_rooms ?? 0}, ${base_kitchens ?? 0}, ${base_balconies ?? 0},
+        ${bedroom_modifier ?? 0}, ${bathroom_modifier ?? 0},
+        ${living_room_modifier ?? 0}, ${kitchen_modifier ?? 0}, ${balcony_modifier ?? 0}
       )
       RETURNING *
     `;

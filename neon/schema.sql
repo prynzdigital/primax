@@ -500,3 +500,98 @@ ON CONFLICT (slug) DO UPDATE SET
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS address TEXT NOT NULL DEFAULT '';
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS city TEXT NOT NULL DEFAULT '';
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS zip_code TEXT NOT NULL DEFAULT '';
+
+-- Migration: Instacart-style room/tier/zip/subscription pricing cart.
+-- Prices/rates below are as specified by the client request, not yet
+-- confirmed as final real business figures — flagged for sign-off.
+-- Idempotent — safe to re-run.
+
+ALTER TABLE services ADD COLUMN IF NOT EXISTS living_room_modifier NUMERIC(10, 2) NOT NULL DEFAULT 0;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS kitchen_modifier NUMERIC(10, 2) NOT NULL DEFAULT 0;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS balcony_modifier NUMERIC(10, 2) NOT NULL DEFAULT 0;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS base_living_rooms INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS base_kitchens INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS base_balconies INTEGER NOT NULL DEFAULT 0;
+
+-- base_* room counts set to 0: in this à-la-carte model every room adds its
+-- per-unit price on top of the base tier fee (nothing "included").
+UPDATE services SET
+  name = 'Standard Maintenance',
+  description = 'Consistent upkeep for busy professionals',
+  price = 95, base_bedrooms = 0, base_bathrooms = 0,
+  bedroom_modifier = 30, bathroom_modifier = 45,
+  living_room_modifier = 35, kitchen_modifier = 50, balcony_modifier = 25
+WHERE slug = 'standard-1b1b';
+
+UPDATE services SET
+  name = 'Deep Restorative',
+  description = 'Intensive hand-wiping, grout scrubbing, & scale removal',
+  price = 175, base_bedrooms = 0, base_bathrooms = 0,
+  bedroom_modifier = 55, bathroom_modifier = 85,
+  living_room_modifier = 60, kitchen_modifier = 95, balcony_modifier = 45
+WHERE slug = 'deep-cleaning';
+
+UPDATE services SET
+  name = 'Move-In / Move-Out',
+  description = 'Turnkey empty-home sanitization including interior cabinets',
+  price = 250, base_bedrooms = 0, base_bathrooms = 0,
+  bedroom_modifier = 70, bathroom_modifier = 110,
+  living_room_modifier = 75, kitchen_modifier = 130, balcony_modifier = 60
+WHERE slug = 'turnover-empty-unit';
+
+ALTER TABLE addons ADD COLUMN IF NOT EXISTS is_counter BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE addons ADD COLUMN IF NOT EXISTS max_quantity INTEGER;
+ALTER TABLE addons ADD COLUMN IF NOT EXISTS disabled_for_category TEXT;
+
+-- Retire the old $0-placeholder add-on set — replaced by the 5 premium
+-- add-ons specified in the new cart model.
+UPDATE addons SET is_active = false
+WHERE slug IN (
+  'laundry-service', 'inside-refrigerator', 'inside-oven', 'pet-hair-removal',
+  'balcony-cleaning', 'interior-windows', 'blind-cleaning', 'wall-spot-cleaning',
+  'garage-sweep', 'patio-cleaning'
+);
+
+INSERT INTO addons (slug, name, description, price, is_counter, max_quantity, disabled_for_category, is_active)
+VALUES
+  ('premium-concierge-shopping', 'Premium Concierge Shopping', 'We pick up groceries or essentials for you during the visit.', 45, false, 1, NULL, true),
+  ('inside-large-appliance-detail', 'Inside Large Appliance Detail', 'Deep interior clean of a large appliance (oven, fridge, etc.) — priced per appliance.', 40, true, 6, NULL, true),
+  ('inside-kitchen-cabinets-drawers', 'Inside Kitchen Cabinets & Drawers', 'Interior wipe-down of all kitchen cabinets and drawers.', 65, false, 1, 'turnover', true),
+  ('eco-pet-hair-extraction', 'Eco-Pet Hair Extraction & Sanitization', 'Specialized extraction and sanitizing pass for homes with pets.', 35, false, 1, NULL, true),
+  ('load-of-laundry', 'Load of Laundry (Wash, Dry, Fold)', 'A load of laundry washed, dried, and folded — priced per load.', 30, true, 4, NULL, true)
+ON CONFLICT (slug) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  price = EXCLUDED.price,
+  is_counter = EXCLUDED.is_counter,
+  max_quantity = EXCLUDED.max_quantity,
+  disabled_for_category = EXCLUDED.disabled_for_category,
+  is_active = EXCLUDED.is_active;
+
+ALTER TABLE appointment_addons ADD COLUMN IF NOT EXISTS quantity INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS living_rooms INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS kitchens INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS balconies INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS square_footage INTEGER;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS frequency TEXT NOT NULL DEFAULT 'one_time'
+  CHECK (frequency IN ('one_time', 'monthly', 'biweekly', 'weekly'));
+
+-- Deactivate any legacy slug-less service (e.g. the original "Standard Home
+-- Cleaning" test row) so it doesn't appear as a bogus tier in the cart.
+UPDATE services SET is_active = false WHERE slug IS NULL;
+
+-- Bespoke-quote leads (enterprise-scale jobs) — not scheduled appointments,
+-- just a lead to follow up on manually.
+CREATE TABLE IF NOT EXISTS quote_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  zip_code TEXT NOT NULL,
+  square_footage INTEGER,
+  bedrooms INTEGER,
+  bathrooms INTEGER,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

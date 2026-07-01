@@ -1,9 +1,18 @@
-import { CheckCircle2, Calendar, Clock, MapPin, Mail, Phone, ArrowLeft, type LucideIcon } from 'lucide-react';
+import { CheckCircle2, Calendar, Clock, MapPin, Mail, Phone, ArrowLeft, Repeat, type LucideIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import type { BusinessSettings } from '../../lib/types';
 import type { SuccessData } from './Booking';
-import { formatCurrency, formatDuration } from '../../lib/availability';
+import { formatCurrency } from '../../lib/availability';
+import { FREQUENCY_OPTIONS } from '../../lib/pricingRules';
 import { IMG } from '../../lib/images';
+
+const ROOM_LABELS: { key: keyof SuccessData['rooms']; label: string }[] = [
+  { key: 'bedrooms', label: 'bed' },
+  { key: 'bathrooms', label: 'bath' },
+  { key: 'livingRooms', label: 'living' },
+  { key: 'kitchens', label: 'kitchen' },
+  { key: 'balconies', label: 'balcony' },
+];
 
 interface Props {
   data: SuccessData;
@@ -12,6 +21,13 @@ interface Props {
 }
 
 export function SuccessConfirmation({ data, settings, onBookAnother }: Props) {
+  const roomSummary = ROOM_LABELS.filter(({ key }) => data.rooms[key] > 0)
+    .map(({ key, label }) => `${data.rooms[key]} ${label}`)
+    .join(' · ');
+  const addonSummary = data.addons
+    .map((c) => (c.quantity > 1 ? `${c.addon.name} ×${c.quantity}` : c.addon.name))
+    .join(', ');
+  const freqLabel = FREQUENCY_OPTIONS.find((f) => f.value === data.frequency)?.label ?? '';
   return (
     <section className="relative min-h-screen overflow-hidden pt-28 pb-20">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -45,11 +61,7 @@ export function SuccessConfirmation({ data, settings, onBookAnother }: Props) {
 
               <div className="mt-8 grid gap-4 rounded-2xl border border-ink-100 bg-ink-50/40 p-6 sm:grid-cols-2">
                 <Detail icon={Calendar} label="Date" value={format(data.date, 'EEEE, MMMM d, yyyy')} />
-                <Detail
-                  icon={Clock}
-                  label="Time"
-                  value={`${data.slot.label} · ${formatDuration(data.service.duration_minutes + data.addons.reduce((sum, a) => sum + a.duration_minutes, 0))}`}
-                />
+                <Detail icon={Clock} label="Time" value={data.slot.label} />
                 <Detail icon={Mail} label="Email" value={data.email} />
                 <Detail icon={Phone} label="Phone" value={data.phone} />
                 <Detail
@@ -62,14 +74,13 @@ export function SuccessConfirmation({ data, settings, onBookAnother }: Props) {
                   icon={MapPin}
                   label="Service"
                   value={
-                    (data.service.category === 'standard' || data.service.category === 'turnover'
-                      ? `${data.service.name} (${data.bedrooms} bed · ${data.bathrooms} bath)`
-                      : data.service.name) +
-                    (data.addons.length > 0 ? ` + ${data.addons.map((a) => a.name).join(', ')}` : '') +
+                    `${data.service.name}${roomSummary ? ` (${roomSummary})` : ''}` +
+                    (addonSummary ? ` + ${addonSummary}` : '') +
                     ` · ${formatCurrency(data.totalPrice)}`
                   }
                   className="sm:col-span-2"
                 />
+                <Detail icon={Repeat} label="Frequency" value={freqLabel} />
                 {data.notes && (
                   <Detail icon={Mail} label="Notes" value={data.notes} className="sm:col-span-2" />
                 )}

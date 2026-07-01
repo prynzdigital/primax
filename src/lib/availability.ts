@@ -1,6 +1,5 @@
 import { format } from 'date-fns';
 import type {
-  Addon,
   Appointment,
   BlockedDate,
   BusinessHours,
@@ -154,24 +153,6 @@ export function formatDuration(minutes: number): string {
   const m = minutes % 60;
   if (m === 0) return `${h} hr`;
   return `${h} hr ${m} min`;
-}
-
-export function computeTotalPrice(params: {
-  service: Service;
-  bedrooms: number;
-  bathrooms: number;
-  addons: Addon[];
-}): number {
-  const { service, bedrooms, bathrooms, addons } = params;
-  const extraBedrooms = Math.max(0, bedrooms - service.base_bedrooms);
-  const extraBathrooms = Math.max(0, bathrooms - service.base_bathrooms);
-  const addonsTotal = addons.reduce((sum, a) => sum + a.price, 0);
-  return (
-    service.price +
-    extraBedrooms * service.bedroom_modifier +
-    extraBathrooms * service.bathroom_modifier +
-    addonsTotal
-  );
 }
 
 export { isSameYMD };

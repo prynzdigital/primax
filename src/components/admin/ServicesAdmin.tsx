@@ -27,6 +27,9 @@ interface FormState {
   base_bathrooms: number;
   bedroom_modifier: number;
   bathroom_modifier: number;
+  living_room_modifier: number;
+  kitchen_modifier: number;
+  balcony_modifier: number;
 }
 
 const EMPTY: FormState = {
@@ -41,6 +44,9 @@ const EMPTY: FormState = {
   base_bathrooms: 1,
   bedroom_modifier: 0,
   bathroom_modifier: 0,
+  living_room_modifier: 0,
+  kitchen_modifier: 0,
+  balcony_modifier: 0,
 };
 
 export function ServicesAdmin() {
@@ -82,6 +88,9 @@ export function ServicesAdmin() {
       base_bathrooms: s.base_bathrooms,
       bedroom_modifier: s.bedroom_modifier,
       bathroom_modifier: s.bathroom_modifier,
+      living_room_modifier: s.living_room_modifier,
+      kitchen_modifier: s.kitchen_modifier,
+      balcony_modifier: s.balcony_modifier,
     });
     setError(null);
     setOpenForm(true);
@@ -109,6 +118,9 @@ export function ServicesAdmin() {
       base_bathrooms: Number(form.base_bathrooms),
       bedroom_modifier: Number(form.bedroom_modifier),
       bathroom_modifier: Number(form.bathroom_modifier),
+      living_room_modifier: Number(form.living_room_modifier),
+      kitchen_modifier: Number(form.kitchen_modifier),
+      balcony_modifier: Number(form.balcony_modifier),
     };
     const res = form.id ? await updateService(form.id, payload) : await createService(payload);
     setSaving(false);
@@ -337,6 +349,36 @@ export function ServicesAdmin() {
               className="input"
               value={form.bathroom_modifier}
               onChange={(e) => setForm({ ...form, bathroom_modifier: parseFloat(e.target.value || '0') })}
+            />
+          </div>
+          <div>
+            <label className="label">Price per living room (USD)</label>
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={form.living_room_modifier}
+              onChange={(e) => setForm({ ...form, living_room_modifier: parseFloat(e.target.value || '0') })}
+            />
+          </div>
+          <div>
+            <label className="label">Price per kitchen (USD)</label>
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={form.kitchen_modifier}
+              onChange={(e) => setForm({ ...form, kitchen_modifier: parseFloat(e.target.value || '0') })}
+            />
+          </div>
+          <div>
+            <label className="label">Price per balcony/patio (USD)</label>
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={form.balcony_modifier}
+              onChange={(e) => setForm({ ...form, balcony_modifier: parseFloat(e.target.value || '0') })}
             />
           </div>
           <div className="sm:col-span-2">

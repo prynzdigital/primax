@@ -1,11 +1,13 @@
 import type {
   AdminUser,
   Addon,
+  AppointmentAddon,
   Appointment,
   AppointmentStatus,
   BlockedDate,
   BusinessHours,
   BusinessSettings,
+  QuoteRequest,
   Service,
 } from './types';
 
@@ -28,6 +30,9 @@ function normalizeService(s: Service): Service {
     price: Number(s.price),
     bedroom_modifier: Number(s.bedroom_modifier),
     bathroom_modifier: Number(s.bathroom_modifier),
+    living_room_modifier: Number(s.living_room_modifier),
+    kitchen_modifier: Number(s.kitchen_modifier),
+    balcony_modifier: Number(s.balcony_modifier),
   };
 }
 
@@ -35,12 +40,16 @@ function normalizeAddon(a: Addon): Addon {
   return { ...a, price: Number(a.price) };
 }
 
+function normalizeAppointmentAddon(a: AppointmentAddon): AppointmentAddon {
+  return { ...a, price: Number(a.price), quantity: Number(a.quantity) };
+}
+
 function normalizeAppointment(a: Appointment): Appointment {
   return {
     ...a,
     total_price: a.total_price !== undefined && a.total_price !== null ? Number(a.total_price) : a.total_price,
     service: a.service ? normalizeService(a.service) : a.service,
-    addons: a.addons ? a.addons.map(normalizeAddon) : a.addons,
+    addons: a.addons ? a.addons.map(normalizeAppointmentAddon) : a.addons,
   };
 }
 
@@ -113,7 +122,9 @@ export async function listAppointmentsForDate(date: string) {
   return request<Appointment[]>(`/appointments?date=${date}`);
 }
 export async function createAppointment(
-  payload: Omit<Appointment, 'id' | 'created_at' | 'status' | 'service' | 'addons'> & { addon_ids: string[] }
+  payload: Omit<Appointment, 'id' | 'created_at' | 'status' | 'service' | 'addons'> & {
+    addons: { id: string; quantity: number }[];
+  }
 ) {
   // Status is always set server-side; the client cannot request a status.
   return request<{ id: string }>('/appointments', { method: 'POST', body: JSON.stringify(payload) });
@@ -151,4 +162,14 @@ export async function getBusinessSettings() {
 }
 export async function saveBusinessSettings(payload: Omit<BusinessSettings, 'id' | 'created_at'>) {
   return request<BusinessSettings>('/business-settings', { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+// Quote requests (bespoke/enterprise leads)
+export async function listQuoteRequests() {
+  return request<QuoteRequest[]>('/quote-requests');
+}
+export async function createQuoteRequest(
+  payload: Omit<QuoteRequest, 'id' | 'created_at'>
+) {
+  return request<{ id: string }>('/quote-requests', { method: 'POST', body: JSON.stringify(payload) });
 }

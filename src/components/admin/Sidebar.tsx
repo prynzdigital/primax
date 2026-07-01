@@ -4,6 +4,7 @@ import {
   CalendarCheck2,
   Sparkles,
   PlusCircle,
+  FileText,
   Clock,
   CalendarX2,
   Settings,
@@ -22,6 +23,7 @@ interface SidebarProps {
 const items = [
   { to: '/admin', end: true, label: 'Overview', icon: LayoutDashboard },
   { to: '/admin/appointments', label: 'Appointments', icon: CalendarCheck2 },
+  { to: '/admin/quotes', label: 'Bespoke Quotes', icon: FileText },
   { to: '/admin/services', label: 'Services', icon: Sparkles },
   { to: '/admin/addons', label: 'Add-ons', icon: PlusCircle },
   { to: '/admin/hours', label: 'Business Hours', icon: Clock },

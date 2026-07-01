@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Pencil, Plus, PowerOff, Power } from 'lucide-react';
 import { listAddons, createAddon, updateAddon } from '../../lib/api';
-import type { Addon } from '../../lib/types';
+import type { Addon, ServiceCategory } from '../../lib/types';
 import { PageHeader } from './PageHeader';
 import { Modal } from './Modal';
 import { formatCurrency, formatDuration } from '../../lib/availability';
 import { cn } from '../../lib/cn';
+
+const DISABLE_CATEGORIES: { value: '' | ServiceCategory; label: string }[] = [
+  { value: '', label: 'Never disabled' },
+  { value: 'standard', label: 'Disabled for Standard Maintenance' },
+  { value: 'deep', label: 'Disabled for Deep Cleaning' },
+  { value: 'turnover', label: 'Disabled for Move-In / Move-Out' },
+];
 
 interface FormState {
   id?: string;
@@ -14,6 +21,9 @@ interface FormState {
   price: number;
   duration_minutes: number;
   is_active: boolean;
+  is_counter: boolean;
+  max_quantity: number | '';
+  disabled_for_category: '' | ServiceCategory;
 }
 
 const EMPTY: FormState = {
@@ -22,6 +32,9 @@ const EMPTY: FormState = {
   price: 0,
   duration_minutes: 0,
   is_active: true,
+  is_counter: false,
+  max_quantity: '',
+  disabled_for_category: '',
 };
 
 export function AddonsAdmin() {
@@ -57,6 +70,9 @@ export function AddonsAdmin() {
       price: a.price,
       duration_minutes: a.duration_minutes,
       is_active: a.is_active,
+      is_counter: a.is_counter,
+      max_quantity: a.max_quantity ?? '',
+      disabled_for_category: a.disabled_for_category ?? '',
     });
     setError(null);
     setOpenForm(true);
@@ -75,6 +91,9 @@ export function AddonsAdmin() {
       price: Number(form.price),
       duration_minutes: Number(form.duration_minutes),
       is_active: form.is_active,
+      is_counter: form.is_counter,
+      max_quantity: form.max_quantity === '' ? null : Number(form.max_quantity),
+      disabled_for_category: form.disabled_for_category || null,
     };
     const res = form.id ? await updateAddon(form.id, payload) : await createAddon(payload);
     setSaving(false);
@@ -237,6 +256,44 @@ export function AddonsAdmin() {
               value={form.duration_minutes}
               onChange={(e) => setForm({ ...form, duration_minutes: parseInt(e.target.value || '0', 10) })}
             />
+          </div>
+          <div>
+            <label className="label">Max quantity (blank = unlimited)</label>
+            <input
+              type="number"
+              min={1}
+              className="input"
+              value={form.max_quantity}
+              onChange={(e) => setForm({ ...form, max_quantity: e.target.value === '' ? '' : parseInt(e.target.value, 10) })}
+              disabled={!form.is_counter}
+            />
+          </div>
+          <div>
+            <label className="label">Availability</label>
+            <select
+              className="input"
+              value={form.disabled_for_category}
+              onChange={(e) => setForm({ ...form, disabled_for_category: e.target.value as '' | ServiceCategory })}
+            >
+              {DISABLE_CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="flex items-center gap-3 rounded-xl border border-ink-100 bg-ink-50/50 p-3">
+              <input
+                type="checkbox"
+                checked={form.is_counter}
+                onChange={(e) => setForm({ ...form, is_counter: e.target.checked })}
+                className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
+              />
+              <span className="text-sm text-ink-800">
+                Counter style — customers can add multiple (per appliance, per load, etc.)
+              </span>
+            </label>
           </div>
           <div className="sm:col-span-2">
             <label className="flex items-center gap-3 rounded-xl border border-ink-100 bg-ink-50/50 p-3">

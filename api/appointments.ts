@@ -17,13 +17,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(rows);
     }
 
-    // Admin: full list with the related service and selected add-ons joined in.
+    // Admin: full list with the related service and selected add-ons (with quantity) joined in.
     if (!requireAdmin(req, res)) return;
     const rows = await sql`
       SELECT a.*, row_to_json(s.*) AS service,
         COALESCE(
           (
-            SELECT json_agg(ad.* ORDER BY ad.name)
+            SELECT json_agg(to_jsonb(ad.*) || jsonb_build_object('quantity', aa.quantity) ORDER BY ad.name)
             FROM appointment_addons aa
             JOIN addons ad ON ad.id = aa.addon_id
             WHERE aa.appointment_id = a.id
@@ -52,7 +52,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       notes,
       bedrooms,
       bathrooms,
-      addon_ids,
+      living_rooms,
+      kitchens,
+      balconies,
+      square_footage,
+      frequency,
+      addons,
       total_price,
     } = req.body ?? {};
     if (
@@ -65,20 +70,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const rows = await sql`
       INSERT INTO appointments (
         full_name, email, phone, address, city, zip_code, service_id, appointment_date, start_time, end_time, status, notes,
-        bedrooms, bathrooms, total_price
+        bedrooms, bathrooms, living_rooms, kitchens, balconies, square_footage, frequency, total_price
       )
       VALUES (
         ${full_name}, ${email}, ${phone}, ${address}, ${city}, ${zip_code}, ${service_id}, ${appointment_date}, ${start_time}, ${end_time}, 'pending', ${notes ?? null},
-        ${bedrooms ?? 1}, ${bathrooms ?? 1}, ${total_price}
+        ${bedrooms ?? 1}, ${bathrooms ?? 1}, ${living_rooms ?? 0}, ${kitchens ?? 0}, ${balconies ?? 0},
+        ${square_footage ?? null}, ${frequency ?? 'one_time'}, ${total_price}
       )
       RETURNING id
     `;
     const appointmentId = rows[0].id as string;
 
-    for (const addonId of (addon_ids as string[] | undefined) ?? []) {
+    for (const { id: addonId, quantity } of (addons as { id: string; quantity: number }[] | undefined) ?? []) {
       await sql`
-        INSERT INTO appointment_addons (appointment_id, addon_id)
-        VALUES (${appointmentId}, ${addonId})
+        INSERT INTO appointment_addons (appointment_id, addon_id, quantity)
+        VALUES (${appointmentId}, ${addonId}, ${quantity ?? 1})
       `;
     }
 

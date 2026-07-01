@@ -10,7 +10,9 @@ interface ServicesProps {
 }
 
 export function Services({ services, loading, onSelectService }: ServicesProps) {
-  const activeServices = services.filter((s) => s.is_active);
+  // The booking cart is built around the 3 core tiers; sectional micro-bookings
+  // aren't part of the cart flow, so keep the homepage grid to the tiers.
+  const activeServices = services.filter((s) => s.is_active && s.category !== 'sectional');
 
   return (
     <section id="services" className="relative py-24 lg:py-32">

@@ -19,8 +19,14 @@ export interface Service {
   tasks: string[];
   base_bedrooms: number;
   base_bathrooms: number;
+  base_living_rooms: number;
+  base_kitchens: number;
+  base_balconies: number;
   bedroom_modifier: number;
   bathroom_modifier: number;
+  living_room_modifier: number;
+  kitchen_modifier: number;
+  balcony_modifier: number;
 }
 
 export interface Addon {
@@ -32,6 +38,13 @@ export interface Addon {
   duration_minutes: number;
   is_active: boolean;
   created_at: string;
+  is_counter: boolean;
+  max_quantity: number | null;
+  disabled_for_category: ServiceCategory | null;
+}
+
+export interface AppointmentAddon extends Addon {
+  quantity: number;
 }
 
 export interface Appointment {
@@ -52,8 +65,26 @@ export interface Appointment {
   service?: Service;
   bedrooms: number;
   bathrooms: number;
-  addons?: Addon[];
+  living_rooms: number;
+  kitchens: number;
+  balconies: number;
+  square_footage: number | null;
+  frequency: 'one_time' | 'monthly' | 'biweekly' | 'weekly';
+  addons?: AppointmentAddon[];
   total_price: number;
+}
+
+export interface QuoteRequest {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  zip_code: string;
+  square_footage: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  notes: string | null;
+  created_at: string;
 }
 
 export interface BusinessHours {

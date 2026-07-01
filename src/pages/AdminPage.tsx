@@ -4,6 +4,7 @@ import { Login } from '../components/admin/Login';
 import { Sidebar, MobileBottomBar } from '../components/admin/Sidebar';
 import { Overview } from '../components/admin/Overview';
 import { AppointmentsAdmin } from '../components/admin/AppointmentsAdmin';
+import { QuoteRequestsAdmin } from '../components/admin/QuoteRequestsAdmin';
 import { ServicesAdmin } from '../components/admin/ServicesAdmin';
 import { AddonsAdmin } from '../components/admin/AddonsAdmin';
 import { BusinessHoursAdmin } from '../components/admin/BusinessHoursAdmin';
@@ -36,6 +37,7 @@ export default function AdminPage() {
           <Routes>
             <Route index element={<Overview />} />
             <Route path="appointments" element={<AppointmentsAdmin />} />
+            <Route path="quotes" element={<QuoteRequestsAdmin />} />
             <Route path="services" element={<ServicesAdmin />} />
             <Route path="addons" element={<AddonsAdmin />} />
             <Route path="hours" element={<BusinessHoursAdmin />} />

@@ -10,11 +10,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     if (!requireAdmin(req, res)) return;
-    const { name, description, price, duration_minutes, is_active } = req.body ?? {};
+    const {
+      name,
+      description,
+      price,
+      duration_minutes,
+      is_active,
+      is_counter,
+      max_quantity,
+      disabled_for_category,
+    } = req.body ?? {};
     if (!name) return res.status(400).json({ error: 'Add-on name is required.' });
     const rows = await sql`
-      INSERT INTO addons (name, description, price, duration_minutes, is_active)
-      VALUES (${name}, ${description ?? null}, ${price ?? 0}, ${duration_minutes ?? 0}, ${is_active ?? true})
+      INSERT INTO addons (name, description, price, duration_minutes, is_active, is_counter, max_quantity, disabled_for_category)
+      VALUES (
+        ${name}, ${description ?? null}, ${price ?? 0}, ${duration_minutes ?? 0}, ${is_active ?? true},
+        ${is_counter ?? false}, ${max_quantity ?? null}, ${disabled_for_category ?? null}
+      )
       RETURNING *
     `;
     return res.status(201).json(rows[0]);
