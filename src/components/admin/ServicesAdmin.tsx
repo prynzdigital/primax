@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Pencil, Plus, PowerOff, Power } from 'lucide-react';
 import { listServices, createService, updateService } from '../../lib/api';
-import type { Service } from '../../lib/types';
+import type { Service, ServiceCategory } from '../../lib/types';
 import { PageHeader } from './PageHeader';
 import { Modal } from './Modal';
 import { formatCurrency, formatDuration } from '../../lib/availability';
 import { cn } from '../../lib/cn';
+
+const CATEGORIES: { value: ServiceCategory; label: string }[] = [
+  { value: 'sectional', label: 'Sectional (micro-booking)' },
+  { value: 'standard', label: 'Standard Maintenance' },
+  { value: 'deep_addon', label: 'Deep Clean Add-On' },
+  { value: 'turnover', label: 'Move-In / Move-Out Turnover' },
+];
 
 interface FormState {
   id?: string;
@@ -14,6 +21,13 @@ interface FormState {
   duration_minutes: number;
   price: number;
   is_active: boolean;
+  category: ServiceCategory;
+  tasks: string;
+  base_bedrooms: number;
+  base_bathrooms: number;
+  bedroom_modifier: number;
+  bathroom_modifier: number;
+  is_addon: boolean;
 }
 
 const EMPTY: FormState = {
@@ -22,6 +36,13 @@ const EMPTY: FormState = {
   duration_minutes: 90,
   price: 120,
   is_active: true,
+  category: 'standard',
+  tasks: '',
+  base_bedrooms: 1,
+  base_bathrooms: 1,
+  bedroom_modifier: 0,
+  bathroom_modifier: 0,
+  is_addon: false,
 };
 
 export function ServicesAdmin() {
@@ -57,6 +78,13 @@ export function ServicesAdmin() {
       duration_minutes: s.duration_minutes,
       price: s.price,
       is_active: s.is_active,
+      category: s.category,
+      tasks: (s.tasks ?? []).join('\n'),
+      base_bedrooms: s.base_bedrooms,
+      base_bathrooms: s.base_bathrooms,
+      bedroom_modifier: s.bedroom_modifier,
+      bathroom_modifier: s.bathroom_modifier,
+      is_addon: s.is_addon,
     });
     setError(null);
     setOpenForm(true);
@@ -75,6 +103,16 @@ export function ServicesAdmin() {
       duration_minutes: Number(form.duration_minutes),
       price: Number(form.price),
       is_active: form.is_active,
+      category: form.category,
+      tasks: form.tasks
+        .split('\n')
+        .map((t) => t.trim())
+        .filter(Boolean),
+      base_bedrooms: Number(form.base_bedrooms),
+      base_bathrooms: Number(form.base_bathrooms),
+      bedroom_modifier: Number(form.bedroom_modifier),
+      bathroom_modifier: Number(form.bathroom_modifier),
+      is_addon: form.is_addon,
     };
     const res = form.id ? await updateService(form.id, payload) : await createService(payload);
     setSaving(false);
@@ -237,6 +275,83 @@ export function ServicesAdmin() {
               value={form.price}
               onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value || '0') })}
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Category</label>
+            <select
+              className="input"
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value as ServiceCategory })}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Tasks included (one per line)</label>
+            <textarea
+              rows={5}
+              className="input resize-none"
+              value={form.tasks}
+              onChange={(e) => setForm({ ...form, tasks: e.target.value })}
+              placeholder={'Countertop perimeters/backsplashes\nStovetop exterior\n...'}
+            />
+          </div>
+          <div>
+            <label className="label">Base bedrooms included</label>
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={form.base_bedrooms}
+              onChange={(e) => setForm({ ...form, base_bedrooms: parseInt(e.target.value || '0', 10) })}
+            />
+          </div>
+          <div>
+            <label className="label">Base bathrooms included</label>
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={form.base_bathrooms}
+              onChange={(e) => setForm({ ...form, base_bathrooms: parseInt(e.target.value || '0', 10) })}
+            />
+          </div>
+          <div>
+            <label className="label">Price per extra bedroom (USD)</label>
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={form.bedroom_modifier}
+              onChange={(e) => setForm({ ...form, bedroom_modifier: parseFloat(e.target.value || '0') })}
+            />
+          </div>
+          <div>
+            <label className="label">Price per extra bathroom (USD)</label>
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={form.bathroom_modifier}
+              onChange={(e) => setForm({ ...form, bathroom_modifier: parseFloat(e.target.value || '0') })}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="flex items-center gap-3 rounded-xl border border-ink-100 bg-ink-50/50 p-3">
+              <input
+                type="checkbox"
+                checked={form.is_addon}
+                onChange={(e) => setForm({ ...form, is_addon: e.target.checked })}
+                className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
+              />
+              <span className="text-sm text-ink-800">
+                Add-on only — hidden from the main service list, offered as an upgrade during Standard Maintenance booking
+              </span>
+            </label>
           </div>
           <div className="sm:col-span-2">
             <label className="flex items-center gap-3 rounded-xl border border-ink-100 bg-ink-50/50 p-3">

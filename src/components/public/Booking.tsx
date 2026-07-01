@@ -9,7 +9,10 @@ import {
   ChevronRight,
   Clock,
   Mail,
+  Minus,
   Phone,
+  Plus,
+  Sparkles,
   User,
   type LucideIcon,
 } from 'lucide-react';
@@ -23,6 +26,7 @@ import type {
 } from '../../lib/types';
 import {
   buildMonthGrid,
+  computeTotalPrice,
   formatCurrency,
   formatDuration,
   generateTimeSlots,
@@ -53,6 +57,10 @@ export interface SuccessData {
   email: string;
   phone: string;
   notes: string;
+  bedrooms: number;
+  bathrooms: number;
+  addon: Service | null;
+  totalPrice: number;
 }
 
 type Step = 1 | 2 | 3;
@@ -81,10 +89,33 @@ export function Booking({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const activeServices = useMemo(() => services.filter((s) => s.is_active), [services]);
+  const [bedrooms, setBedrooms] = useState(1);
+  const [bathrooms, setBathrooms] = useState(1);
+  const [addonSelected, setAddonSelected] = useState(false);
+
+  const activeServices = useMemo(
+    () => services.filter((s) => s.is_active && !s.is_addon),
+    [services]
+  );
+  const addonService = useMemo(
+    () => services.find((s) => s.is_addon && s.is_active) ?? null,
+    [services]
+  );
+  const scalesWithRooms =
+    selectedService?.category === 'standard' || selectedService?.category === 'turnover';
+  const showAddonOption = selectedService?.category === 'standard' && !!addonService;
+  const selectedAddon = showAddonOption && addonSelected ? addonService : null;
+  const totalPrice = selectedService
+    ? computeTotalPrice({ service: selectedService, bedrooms, bathrooms, addon: selectedAddon })
+    : 0;
 
   useEffect(() => {
-    if (selectedService) setStep((prev) => (prev < 2 ? 2 : prev));
+    if (selectedService) {
+      setStep((prev) => (prev < 2 ? 2 : prev));
+      setBedrooms(selectedService.base_bedrooms);
+      setBathrooms(selectedService.base_bathrooms);
+      if (selectedService.category !== 'standard') setAddonSelected(false);
+    }
   }, [selectedService]);
 
   useEffect(() => {
@@ -156,8 +187,11 @@ export function Booking({
       appointment_date: toDbDate(selectedDate),
       start_time: toDbTime(selectedSlot.start),
       end_time: toDbTime(selectedSlot.end),
-      status: 'pending',
       notes: form.notes.trim() || null,
+      bedrooms,
+      bathrooms,
+      addon_service_id: selectedAddon?.id ?? null,
+      total_price: totalPrice,
     };
 
     const { error: insertErr } = await createAppointment(payload);
@@ -176,6 +210,10 @@ export function Booking({
       email: payload.email,
       phone: payload.phone,
       notes: form.notes.trim(),
+      bedrooms,
+      bathrooms,
+      addon: selectedAddon,
+      totalPrice,
     });
   }
 
@@ -203,6 +241,15 @@ export function Booking({
                     services={activeServices}
                     selected={selectedService}
                     onSelect={setSelectedService}
+                    scalesWithRooms={scalesWithRooms}
+                    bedrooms={bedrooms}
+                    setBedrooms={setBedrooms}
+                    bathrooms={bathrooms}
+                    setBathrooms={setBathrooms}
+                    showAddonOption={showAddonOption}
+                    addonService={addonService}
+                    addonSelected={addonSelected}
+                    setAddonSelected={setAddonSelected}
                   />
                 )}
                 {step === 2 && (
@@ -260,6 +307,11 @@ export function Booking({
               slot={selectedSlot}
               form={form}
               step={step}
+              bedrooms={bedrooms}
+              bathrooms={bathrooms}
+              scalesWithRooms={scalesWithRooms}
+              addon={selectedAddon}
+              totalPrice={totalPrice}
             />
           </div>
         </div>
@@ -313,10 +365,28 @@ function Step1({
   services,
   selected,
   onSelect,
+  scalesWithRooms,
+  bedrooms,
+  setBedrooms,
+  bathrooms,
+  setBathrooms,
+  showAddonOption,
+  addonService,
+  addonSelected,
+  setAddonSelected,
 }: {
   services: Service[];
   selected: Service | null;
   onSelect: (s: Service) => void;
+  scalesWithRooms: boolean;
+  bedrooms: number;
+  setBedrooms: (n: number) => void;
+  bathrooms: number;
+  setBathrooms: (n: number) => void;
+  showAddonOption: boolean;
+  addonService: Service | null;
+  addonSelected: boolean;
+  setAddonSelected: (v: boolean) => void;
 }) {
   return (
     <div>
@@ -375,6 +445,97 @@ function Step1({
           })}
         </div>
       )}
+
+      {selected && scalesWithRooms && (
+        <div className="mt-6 rounded-2xl border border-ink-100 bg-ink-50/50 p-5">
+          <div className="text-sm font-medium text-ink-900">Home size</div>
+          <p className="mt-1 text-xs text-ink-500">
+            Price adjusts automatically for bedrooms and bathrooms beyond the base.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <RoomStepper
+              label="Bedrooms"
+              value={bedrooms}
+              min={selected.base_bedrooms}
+              onChange={setBedrooms}
+            />
+            <RoomStepper
+              label="Bathrooms"
+              value={bathrooms}
+              min={selected.base_bathrooms}
+              onChange={setBathrooms}
+            />
+          </div>
+        </div>
+      )}
+
+      {selected && showAddonOption && addonService && (
+        <label
+          className={cn(
+            'mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition',
+            addonSelected ? 'border-brand-500 bg-brand-50/50' : 'border-ink-200 bg-white hover:border-ink-300'
+          )}
+        >
+          <input
+            type="checkbox"
+            checked={addonSelected}
+            onChange={(e) => setAddonSelected(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} className="text-brand-600" />
+              <span className="text-sm font-semibold text-ink-900">
+                Add {addonService.name.replace(' (Add-On to Standard)', '')}
+              </span>
+              <span className="ml-auto text-sm font-semibold text-ink-900">
+                +{formatCurrency(addonService.price)}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-ink-500">
+              {addonService.description ?? 'A deeper, top-to-bottom clean on top of the standard visit.'}
+            </p>
+          </div>
+        </label>
+      )}
+    </div>
+  );
+}
+
+function RoomStepper({
+  label,
+  value,
+  min,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-widest text-ink-500">{label}</div>
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => onChange(Math.max(min, value - 1))}
+          disabled={value <= min}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 transition hover:bg-ink-50 disabled:opacity-40"
+          aria-label={`Decrease ${label.toLowerCase()}`}
+        >
+          <Minus size={14} />
+        </button>
+        <span className="w-6 text-center text-sm font-semibold text-ink-900">{value}</span>
+        <button
+          type="button"
+          onClick={() => onChange(value + 1)}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 transition hover:bg-ink-50"
+          aria-label={`Increase ${label.toLowerCase()}`}
+        >
+          <Plus size={14} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -632,12 +793,22 @@ function Summary({
   slot,
   form,
   step,
+  bedrooms,
+  bathrooms,
+  scalesWithRooms,
+  addon,
+  totalPrice,
 }: {
   service: Service | null;
   date: Date | null;
   slot: TimeSlot | null;
   form: { full_name: string; email: string; phone: string; notes: string };
   step: Step;
+  bedrooms: number;
+  bathrooms: number;
+  scalesWithRooms: boolean;
+  addon: Service | null;
+  totalPrice: number;
 }) {
   return (
     <aside className="card sticky top-24 h-fit overflow-hidden">
@@ -655,6 +826,10 @@ function Summary({
       </div>
 
       <div className="p-5">
+        {service && scalesWithRooms && (
+          <Row label="Home size">{bedrooms} bed · {bathrooms} bath</Row>
+        )}
+        {addon && <Row label="Add-on">{addon.name.replace(' (Add-On to Standard)', '')}</Row>}
         <Row label="Date">
           {date ? format(date, 'EEE, MMM d, yyyy') : <Placeholder>Select a date</Placeholder>}
         </Row>
@@ -662,7 +837,7 @@ function Summary({
           {slot ? slot.label : <Placeholder>Select a time</Placeholder>}
         </Row>
         <Row label="Duration">
-          {service ? formatDuration(service.duration_minutes) : <Placeholder>—</Placeholder>}
+          {service ? formatDuration(service.duration_minutes + (addon?.duration_minutes ?? 0)) : <Placeholder>—</Placeholder>}
         </Row>
         {step === 3 && (
           <>
@@ -678,7 +853,7 @@ function Summary({
           <div className="flex items-center justify-between text-sm">
             <div className="text-ink-500">Estimated total</div>
             <div className="font-display text-2xl font-semibold text-ink-900">
-              {service ? formatCurrency(service.price) : '—'}
+              {service ? formatCurrency(totalPrice) : '—'}
             </div>
           </div>
           <div className="mt-1 text-xs text-ink-500">

@@ -7,6 +7,7 @@ import { PageHeader } from './PageHeader';
 import { StatusBadge } from './StatusBadge';
 import { Modal } from './Modal';
 import { cn } from '../../lib/cn';
+import { formatCurrency } from '../../lib/availability';
 
 const STATUSES: AppointmentStatus[] = ['pending', 'confirmed', 'completed', 'cancelled'];
 
@@ -161,6 +162,9 @@ export function AppointmentsAdmin() {
               <DetailItem label="Date" value={format(parseISO(active.appointment_date), 'EEEE, MMMM d, yyyy')} />
               <DetailItem label="Time" value={`${active.start_time.slice(0, 5)} – ${active.end_time.slice(0, 5)}`} />
               <DetailItem label="Service" value={active.service?.name ?? '—'} />
+              <DetailItem label="Total" value={formatCurrency(active.total_price ?? active.service?.price ?? 0)} />
+              <DetailItem label="Home size" value={`${active.bedrooms} bed · ${active.bathrooms} bath`} />
+              <DetailItem label="Add-on" value={active.addon_service?.name ?? 'None'} />
               <DetailItem label="Created" value={format(parseISO(active.created_at), 'MMM d, yyyy')} />
             </div>
 

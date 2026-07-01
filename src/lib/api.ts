@@ -19,6 +19,26 @@ export interface ApiResult<T> {
   error: ApiError | null;
 }
 
+// Postgres NUMERIC columns come back from the Neon driver as strings (e.g. "129.00")
+// to avoid float precision loss — coerce them to JS numbers at the API boundary.
+function normalizeService(s: Service): Service {
+  return {
+    ...s,
+    price: Number(s.price),
+    bedroom_modifier: Number(s.bedroom_modifier),
+    bathroom_modifier: Number(s.bathroom_modifier),
+  };
+}
+
+function normalizeAppointment(a: Appointment): Appointment {
+  return {
+    ...a,
+    total_price: a.total_price !== undefined && a.total_price !== null ? Number(a.total_price) : a.total_price,
+    service: a.service ? normalizeService(a.service) : a.service,
+    addon_service: a.addon_service ? normalizeService(a.addon_service) : a.addon_service,
+  };
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<ApiResult<T>> {
   try {
     const res = await fetch(`${BASE}${path}`, {
@@ -53,33 +73,38 @@ export async function getSession() {
 
 // Services
 export async function listServices() {
-  return request<Service[]>('/services');
+  const res = await request<Service[]>('/services');
+  return { ...res, data: res.data ? res.data.map(normalizeService) : res.data };
 }
 export async function createService(payload: Partial<Service>) {
-  return request<Service>('/services', { method: 'POST', body: JSON.stringify(payload) });
+  const res = await request<Service>('/services', { method: 'POST', body: JSON.stringify(payload) });
+  return { ...res, data: res.data ? normalizeService(res.data) : res.data };
 }
 export async function updateService(id: string, payload: Partial<Service>) {
-  return request<Service>(`/services?id=${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  const res = await request<Service>(`/services?id=${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  return { ...res, data: res.data ? normalizeService(res.data) : res.data };
 }
 
 // Appointments
 export async function listAppointments() {
-  return request<Appointment[]>('/appointments');
+  const res = await request<Appointment[]>('/appointments');
+  return { ...res, data: res.data ? res.data.map(normalizeAppointment) : res.data };
 }
 export async function listAppointmentsForDate(date: string) {
   return request<Appointment[]>(`/appointments?date=${date}`);
 }
 export async function createAppointment(
-  payload: Omit<Appointment, 'id' | 'created_at' | 'status' | 'service'>
+  payload: Omit<Appointment, 'id' | 'created_at' | 'status' | 'service' | 'addon_service'>
 ) {
   // Status is always set server-side; the client cannot request a status.
   return request<{ id: string }>('/appointments', { method: 'POST', body: JSON.stringify(payload) });
 }
 export async function updateAppointmentStatus(id: string, status: AppointmentStatus) {
-  return request<Appointment>(`/appointments?id=${id}`, {
+  const res = await request<Appointment>(`/appointments?id=${id}`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
   });
+  return { ...res, data: res.data ? normalizeAppointment(res.data) : res.data };
 }
 
 // Business hours

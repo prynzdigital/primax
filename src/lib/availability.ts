@@ -155,4 +155,21 @@ export function formatDuration(minutes: number): string {
   return `${h} hr ${m} min`;
 }
 
+export function computeTotalPrice(params: {
+  service: Service;
+  bedrooms: number;
+  bathrooms: number;
+  addon: Service | null;
+}): number {
+  const { service, bedrooms, bathrooms, addon } = params;
+  const extraBedrooms = Math.max(0, bedrooms - service.base_bedrooms);
+  const extraBathrooms = Math.max(0, bathrooms - service.base_bathrooms);
+  return (
+    service.price +
+    extraBedrooms * service.bedroom_modifier +
+    extraBathrooms * service.bathroom_modifier +
+    (addon ? addon.price : 0)
+  );
+}
+
 export { isSameYMD };

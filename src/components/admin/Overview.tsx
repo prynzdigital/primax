@@ -45,7 +45,7 @@ export function Overview() {
     });
     const pending = appointments.filter((a) => a.status === 'pending');
     const completed = appointments.filter((a) => a.status === 'completed');
-    const revenue = completed.reduce((acc, a) => acc + (a.service?.price ?? 0), 0);
+    const revenue = completed.reduce((acc, a) => acc + (a.total_price ?? a.service?.price ?? 0), 0);
     const activeServices = services.filter((s) => s.is_active).length;
     return { upcoming, pending, completed, revenue, activeServices };
   }, [appointments, services]);

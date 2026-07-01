@@ -24,6 +24,6 @@ export async function updateRow<T>(
   const setClauses = keys.map((k, i) => `"${k}" = $${i + 2}`).join(', ');
   const values = keys.map((k) => fields[k]);
   const text = `UPDATE ${table} SET ${setClauses} WHERE id = $1 RETURNING *`;
-  const rows = await sql.query(text, [id, ...values]);
+  const rows = await sql(text, [id, ...values]);
   return (rows[0] as T) ?? null;
 }

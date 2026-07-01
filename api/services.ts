@@ -10,11 +10,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     if (!requireAdmin(req, res)) return;
-    const { name, description, duration_minutes, price, is_active } = req.body ?? {};
+    const {
+      name,
+      description,
+      duration_minutes,
+      price,
+      is_active,
+      category,
+      tasks,
+      base_bedrooms,
+      base_bathrooms,
+      bedroom_modifier,
+      bathroom_modifier,
+      is_addon,
+    } = req.body ?? {};
     if (!name) return res.status(400).json({ error: 'Service name is required.' });
     const rows = await sql`
-      INSERT INTO services (name, description, duration_minutes, price, is_active)
-      VALUES (${name}, ${description ?? null}, ${duration_minutes}, ${price}, ${is_active ?? true})
+      INSERT INTO services (
+        name, description, duration_minutes, price, is_active,
+        category, tasks, base_bedrooms, base_bathrooms, bedroom_modifier, bathroom_modifier, is_addon
+      )
+      VALUES (
+        ${name}, ${description ?? null}, ${duration_minutes}, ${price}, ${is_active ?? true},
+        ${category ?? 'standard'}, ${tasks ?? []}, ${base_bedrooms ?? 1}, ${base_bathrooms ?? 1},
+        ${bedroom_modifier ?? 0}, ${bathroom_modifier ?? 0}, ${is_addon ?? false}
+      )
       RETURNING *
     `;
     return res.status(201).json(rows[0]);

@@ -45,13 +45,23 @@ export function SuccessConfirmation({ data, settings, onBookAnother }: Props) {
 
               <div className="mt-8 grid gap-4 rounded-2xl border border-ink-100 bg-ink-50/40 p-6 sm:grid-cols-2">
                 <Detail icon={Calendar} label="Date" value={format(data.date, 'EEEE, MMMM d, yyyy')} />
-                <Detail icon={Clock} label="Time" value={`${data.slot.label} · ${formatDuration(data.service.duration_minutes)}`} />
+                <Detail
+                  icon={Clock}
+                  label="Time"
+                  value={`${data.slot.label} · ${formatDuration(data.service.duration_minutes + (data.addon?.duration_minutes ?? 0))}`}
+                />
                 <Detail icon={Mail} label="Email" value={data.email} />
                 <Detail icon={Phone} label="Phone" value={data.phone} />
                 <Detail
                   icon={MapPin}
                   label="Service"
-                  value={`${data.service.name} · ${formatCurrency(data.service.price)}`}
+                  value={
+                    (data.service.category === 'standard' || data.service.category === 'turnover'
+                      ? `${data.service.name} (${data.bedrooms} bed · ${data.bathrooms} bath)`
+                      : data.service.name) +
+                    (data.addon ? ` + ${data.addon.name.replace(' (Add-On to Standard)', '')}` : '') +
+                    ` · ${formatCurrency(data.totalPrice)}`
+                  }
                   className="sm:col-span-2"
                 />
                 {data.notes && (

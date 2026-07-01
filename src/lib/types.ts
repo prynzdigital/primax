@@ -1,5 +1,7 @@
 export type AppointmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 
+export type ServiceCategory = 'sectional' | 'standard' | 'deep_addon' | 'turnover';
+
 export interface AdminUser {
   id: string;
   email: string;
@@ -13,6 +15,13 @@ export interface Service {
   price: number;
   is_active: boolean;
   created_at: string;
+  category: ServiceCategory;
+  tasks: string[];
+  base_bedrooms: number;
+  base_bathrooms: number;
+  bedroom_modifier: number;
+  bathroom_modifier: number;
+  is_addon: boolean;
 }
 
 export interface Appointment {
@@ -28,6 +37,11 @@ export interface Appointment {
   notes: string | null;
   created_at: string;
   service?: Service;
+  bedrooms: number;
+  bathrooms: number;
+  addon_service_id: string | null;
+  addon_service?: Service;
+  total_price: number;
 }
 
 export interface BusinessHours {
