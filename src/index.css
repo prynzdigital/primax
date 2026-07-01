@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-white text-ink-800 font-sans;
+    background-color: #fbfcfd;
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium tracking-wide text-brand-700 ring-1 ring-inset ring-brand-100;
+  }
+
+  .display-heading {
+    @apply font-display tracking-tight text-ink-900;
+    font-feature-settings: 'ss01' on, 'ss02' on;
+    letter-spacing: -0.02em;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-ink-900 text-white shadow-soft hover:bg-ink-800 hover:shadow-lift active:translate-y-px;
+  }
+
+  .btn-brand {
+    @apply btn bg-brand-600 text-white shadow-soft hover:bg-brand-700 hover:shadow-lift active:translate-y-px;
+  }
+
+  .btn-outline {
+    @apply btn border border-ink-200 bg-white text-ink-800 hover:border-ink-300 hover:bg-ink-50;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-ink-700 hover:bg-ink-100;
+  }
+
+  .input {
+    @apply block w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-ink-800 mb-1.5;
+  }
+
+  .card {
+    @apply rounded-2xl border border-ink-100 bg-white shadow-card;
+  }
+
+  .surface {
+    @apply rounded-2xl border border-ink-100 bg-white;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset;
+  }
+
+  .badge-pending {
+    @apply badge bg-amber-50 text-amber-800 ring-amber-200;
+  }
+
+  .badge-confirmed {
+    @apply badge bg-brand-50 text-brand-800 ring-brand-200;
+  }
+
+  .badge-completed {
+    @apply badge bg-mint-50 text-mint-800 ring-mint-200;
+  }
+
+  .badge-cancelled {
+    @apply badge bg-rose-50 text-rose-800 ring-rose-200;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .mask-fade-bottom {
+    -webkit-mask-image: linear-gradient(180deg, black 70%, transparent 100%);
+    mask-image: linear-gradient(180deg, black 70%, transparent 100%);
+  }
+}

@@ -1,0 +1,20 @@
+# SPA fallback for Apache (Hostinger).
+# Serves index.html for any route that is not a real file or directory,
+# so client-side routes (e.g. /admin) work on direct load and refresh
+# instead of returning a 404 / blank page.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # If the site is served from a subfolder instead of the domain root,
+  # uncomment the next line and set it to that folder, e.g. "/myapp/".
+  # RewriteBase /
+
+  # Don't rewrite requests for files or directories that actually exist
+  # (JS, CSS, images, favicon, etc.).
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Everything else falls back to the SPA entry point.
+  RewriteRule ^ index.html [L]
+</IfModule>
