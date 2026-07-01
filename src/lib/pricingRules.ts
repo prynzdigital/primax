@@ -10,7 +10,7 @@ export const LUXURY_MULTIPLIER = 0.2; // 20% surcharge on subtotal
 export const LOOP_ZIPS = ['60601', '60602', '60603', '60604', '60605', '60606', '60611', '60654', '60661'];
 export const LOGISTICS_FEE = 25; // flat "Logistics & Parking Fee"
 
-export const MIN_BOOKING_PRICE = 175;
+export const MIN_BOOKING_PRICE = 95;
 export const ENTERPRISE_BED_MAX = 6;
 export const ENTERPRISE_BATH_MAX = 6;
 export const ENTERPRISE_SQFT_MAX = 5000;

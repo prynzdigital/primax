@@ -21,7 +21,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       RETURNING id
     `;
 
-    const [settings] = await sql`SELECT business_phone FROM business_settings LIMIT 1`;
+    // Notify customer + admin over SMS, same path as a normal booking —
+    // never blocks or fails the request itself.
+    const [settings] = await sql`SELECT business_name, business_phone FROM business_settings LIMIT 1`;
+    const businessName = settings?.business_name ?? 'Primax Group';
+    await sendSms(
+      phone,
+      `Hi ${full_name}, thanks for your bespoke quote request with ${businessName}. A specialist will reach out shortly with custom pricing.`
+    );
     if (settings?.business_phone) {
       await sendSms(
         settings.business_phone,
