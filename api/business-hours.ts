@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from './_db';
-import { requireAdmin } from './_auth';
+import { sql } from './_db.js';
+import { requireAdmin } from './_auth.js';
 
 interface HoursRow {
   weekday: number;
