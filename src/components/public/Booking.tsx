@@ -1136,14 +1136,11 @@ function Summary({
               {cart.addonsTotal > 0 && (
                 <LineItem label="Premium add-ons" value={formatCurrency(cart.addonsTotal)} />
               )}
-              {cart.luxuryMultiplierApplied && (
+              {cart.locationFee > 0 && (
                 <LineItem
-                  label="Luxury area multiplier (20%)"
-                  value={`+${formatCurrency(cart.luxuryMultiplierAmount)}`}
+                  label={`Urban Logistics & Parking Fee (${cart.locationMultiplier.toFixed(2)}×)`}
+                  value={`+${formatCurrency(cart.locationFee)}`}
                 />
-              )}
-              {cart.logisticsFeeApplied && (
-                <LineItem label="Logistics & parking fee" value={`+${formatCurrency(25)}`} />
               )}
               {cart.discountPct > 0 && (
                 <LineItem

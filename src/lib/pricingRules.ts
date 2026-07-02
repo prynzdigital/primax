@@ -4,11 +4,21 @@ import type { Addon, Service } from './types';
 // booking cart. Figures below are as specified by the client request, not
 // yet confirmed as final real business numbers — flag for sign-off.
 
-export const LUXURY_ZIPS = ['60611', '60614', '60601', '60603', '60602', '60604', '60654'];
-export const LUXURY_MULTIPLIER = 0.2; // 20% surcharge on subtotal
+// Unified location multiplier — a single "Urban Logistics & Parking Fee" that
+// merges the former luxury multiplier and flat logistics fee into one factor
+// applied to the whole subtotal, keyed off the Chicago zip code.
+export const ULTRA_LUXURY_ZIPS = [
+  '60601', '60602', '60603', '60604', '60605', '60606', '60611', '60614', '60654', '60661',
+];
+export const AFFLUENT_ZIPS = ['60613', '60647', '60657', '60201'];
 
-export const LOOP_ZIPS = ['60601', '60602', '60603', '60604', '60605', '60606', '60611', '60654', '60661'];
-export const LOGISTICS_FEE = 25; // flat "Logistics & Parking Fee"
+/** Returns the location multiplier (1.30 / 1.15 / 1.00) for a Chicago zip. */
+export function locationMultiplier(zip: string): number {
+  const z = zip.trim();
+  if (ULTRA_LUXURY_ZIPS.includes(z)) return 1.3;
+  if (AFFLUENT_ZIPS.includes(z)) return 1.15;
+  return 1.0;
+}
 
 export const MIN_BOOKING_PRICE = 95;
 export const ENTERPRISE_BED_MAX = 6;
@@ -23,14 +33,6 @@ export const FREQUENCY_OPTIONS: { value: Frequency; label: string; discountPct: 
   { value: 'biweekly', label: 'Bi-Weekly', discountPct: 10, badge: 'Most Popular' },
   { value: 'weekly', label: 'Weekly', discountPct: 15 },
 ];
-
-export function isLuxuryZip(zip: string): boolean {
-  return LUXURY_ZIPS.includes(zip.trim());
-}
-
-export function isLoopZip(zip: string): boolean {
-  return LOOP_ZIPS.includes(zip.trim());
-}
 
 export function isEnterpriseJob(params: {
   bedrooms: number;
@@ -63,9 +65,8 @@ export interface CartTotal {
   roomAdditions: number;
   addonsTotal: number;
   preSurchargeSubtotal: number;
-  luxuryMultiplierApplied: boolean;
-  luxuryMultiplierAmount: number;
-  logisticsFeeApplied: boolean;
+  locationMultiplier: number;
+  locationFee: number;
   subtotal: number;
   discountPct: number;
   discountAmount: number;
@@ -93,12 +94,13 @@ export function computeCartTotal(params: {
   const baseFee = service.price;
   const preSurchargeSubtotal = baseFee + roomAdditions + addonsTotal;
 
-  const luxuryMultiplierApplied = isLuxuryZip(zipCode);
-  const luxuryMultiplierAmount = luxuryMultiplierApplied ? preSurchargeSubtotal * LUXURY_MULTIPLIER : 0;
+  // Single consolidated location factor replaces the old luxury multiplier +
+  // flat logistics fee. The "Urban Logistics & Parking Fee" line is the delta
+  // it adds to the subtotal.
+  const multiplier = locationMultiplier(zipCode);
+  const locationFee = preSurchargeSubtotal * (multiplier - 1);
 
-  const logisticsFeeApplied = isLoopZip(zipCode);
-
-  const subtotal = preSurchargeSubtotal + luxuryMultiplierAmount + (logisticsFeeApplied ? LOGISTICS_FEE : 0);
+  const subtotal = preSurchargeSubtotal + locationFee;
 
   const discountPct = FREQUENCY_OPTIONS.find((f) => f.value === frequency)?.discountPct ?? 0;
   const discountAmount = subtotal * (discountPct / 100);
@@ -110,9 +112,8 @@ export function computeCartTotal(params: {
     roomAdditions,
     addonsTotal,
     preSurchargeSubtotal,
-    luxuryMultiplierApplied,
-    luxuryMultiplierAmount,
-    logisticsFeeApplied,
+    locationMultiplier: multiplier,
+    locationFee,
     subtotal,
     discountPct,
     discountAmount,
